@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.select2-container--default .select2-selection--single {
+    height: 45px !important;
+    border-radius: 0.375rem !important;
+    border: 1px solid #d1d5db !important;
+    background-color: #f9fafb !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #111827;
+    line-height: normal;
+    padding: 0 !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+    top: 0 !important;
+    right: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.select2-container--default .select2-results__option--selected {
+    background-color: #eff6ff !important;
+    color: #1d4ed8 !important;
+}
+
+.select2-search--dropdown .select2-search__field {
+    border-radius: 0.375rem !important;
+    border: 1px solid #d1d5db !important;
+    padding: 0.5rem 1rem !important;
+    background-color: #f9fafb !important;
+    margin: 0.5rem;
+    width: calc(100% - 1rem) !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 1px #3b82f6 !important; 
+}
+
+.dataTables_paginate {
+    background-color: whitesmoke;
+    padding: 10px 10px 5px 10px;
+    border-radius: 5px;
+}
+
+.dataTables_paginate a {
+    border-radius: 5px !important;
+    transition: 0.2s ease-in-out;
+}
+
+.dataTables_paginate a:hover {
+    background-color: white;
+    color: black;
+    transition: 0.2s ease-in-out;
+}
+
+.dataTable thead tr th {
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.dataTable thead th::after,
+.dataTable thead th::before {
+    visibility: hidden;
+}
+
+.dataTable tbody td {
+    border-bottom: 1px solid #f2f2f2;
+}
+

@@ -1,0 +1,9 @@
+@extends('page.components.master')
+@section('content')
+    @include('page.section.herosection')
+    @include('page.section.infografis')
+    @include('page.section.mapsection')
+    @include('page.section.beritasection')
+    @include('page.section.konsultasisection')
+    @include('page.section.laporsection')
+@endsection
