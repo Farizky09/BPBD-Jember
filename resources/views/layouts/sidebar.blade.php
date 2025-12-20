@@ -3,7 +3,7 @@
         <div class="nk-sidebar-brand flex items-center mt-4">
             <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
                 <img src="{{ asset('assets/img/icons/bpbd.png') }}" alt="Logo" class="w-10 h-10 object-contain" />
-                <h1 class="text-xl font-bold sitename">BumiKita</h1>
+                <h1 class="text-xl font-bold sitename">BPBD-Jember</h1>
             </a>
         </div>
 
@@ -42,10 +42,6 @@
                                 <li class="nk-menu-item">
                                     <a href="{{ route('dashboard.infografis') }}" class="nk-menu-link"><span
                                             class="nk-menu-text">Infografis Dashboard</span></a>
-                                </li>
-                                <li class="nk-menu-item">
-                                    <a href="{{ route('dashboard.infografis.eartquake') }}" class="nk-menu-link"><span
-                                            class="nk-menu-text">EarthQuake Dashboard</span></a>
                                 </li>
 
                             </ul><!-- .nk-menu-sub -->

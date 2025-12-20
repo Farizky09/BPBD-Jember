@@ -46,6 +46,20 @@
                                         <x-button.button-success>Tambah</x-button.button-success>
                                     </a>
                                 </li>
+                                <li>
+                                    <div class="col-md-3">
+                                        <x-input.input type="date" name="start_date" id="start_date"
+                                            label="Tanggal Awal"></x-input.input>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <x-input.input type="date" name="end_date" id="end_date"
+                                            label="Tanggal Akhir"></x-input.input>
+                                    </div>
+                                    <button type="button" id="buttonFilter"
+                                        class="focus:outline-none text-white bg-green-500 font-medium rounded-lg text-sm px-5 py-2.5 me-2">
+                                        Filter Data
+                                    </button>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -54,7 +68,7 @@
         </div>
         <div class="nk-block">
             <div class="row g-gs">
-                <table id="userDataTable" class="table table-bordered" style="width: 100%;">
+                <table id="roleDataTable" class="table table-bordered" style="width: 100%;">
                     <thead class="table-light">
                         <tr>
                             <th>No</th>
@@ -102,7 +116,7 @@
                                 'Data user ' + _name + ' berhasil dihapus.',
                                 'success'
                             ).then(() => {
-                                $('#userDataTable').DataTable().ajax.reload(null, false);
+                                $('#roleDataTable').DataTable().ajax.reload(null, false);
                             });
                         },
                         error: function(response) {
@@ -116,16 +130,34 @@
                 }
             });
         }
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
 
-        $(function() {
+
+        startDateInput.addEventListener('change', function() {
+            const startDate = this.value;
+            endDateInput.min = startDate;
+        });
+
+        function reloadDataTable() {
+            $('#roleDataTable').DataTable().ajax.reload();
+        }
+
+        function createDataTable() {
             let url = '{{ route('role.index') }}';
-            $('#userDataTable').DataTable({
+            $('#roleDataTable').DataTable({
                 processing: true,
                 serverSide: true,
                 autoWidth: false,
                 responsive: true,
                 scrollX: true,
-                ajax: url,
+                ajax: {
+                    url: url,
+                    data: function(d) {
+                        d.start_date = $('#start_date').val();
+                        d.end_date = $('#end_date').val();
+                    },
+                },
                 language: {
                     "paginate": {
                         "first": "Pertama",
@@ -151,6 +183,10 @@
                     },
                 ]
             });
+        }
+        createDataTable();
+        $('#buttonFilter').on('click', function() {
+            reloadDataTable();
         });
         // console.log(ajax, 'p');
         @include('components.flash-message')

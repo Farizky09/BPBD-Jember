@@ -28,7 +28,7 @@ class UserManagementController extends Controller
         // return $this->userManagement->get();
         if ($request->ajax()) {
             return datatables()
-                ->of($this->userManagement->get())
+                ->of($this->userManagement->datatable())
                 ->addColumn('name', function ($data) {
                     return $data->name;
                 })
@@ -39,11 +39,15 @@ class UserManagementController extends Controller
                     return $data->phone_number;
                 })
                 ->addColumn('role', function ($data) {
-                    return ucwords(str_replace('_', ' ', $data->getRoleNames()->first()));
+                    if (method_exists($data, 'getRoleNames')) {
+                        return ucwords(str_replace('_', ' ', $data->getRoleNames()->first()));
+                    }
+                    return 'N/A';
                 })
                 ->addColumn('status', function ($data) {
                     if ($data->is_banned === "none") {
-                        return $data->is_active == 1
+                        $isActive = isset($data->is_active) ? $data->is_active : true;
+                        return $isActive
                             ? '<span class="badge bg-success">Aktif</span>'
                             : '<span class="badge bg-secondary">Tidak Aktif</span>';
                     } elseif ($data->is_banned === "temporary") {
@@ -54,7 +58,6 @@ class UserManagementController extends Controller
                         return '<span class="badge bg-info">Status Tidak Diketahui</span>';
                     }
                 })
-
                 ->addColumn('action', function ($data) {
                     return view('user-management.column.action', compact('data'));
                 })

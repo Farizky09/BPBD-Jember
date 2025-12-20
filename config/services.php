@@ -43,7 +43,7 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('APP_ENV') === 'production'
-            ? 'https://bumikita.upylon.com/auth/google/callback'
+            ? 'https://BPBD-Jember.upylon.com/auth/google/callback'
             : 'http://127.0.0.1:8000/auth/google/callback',
     ],
 

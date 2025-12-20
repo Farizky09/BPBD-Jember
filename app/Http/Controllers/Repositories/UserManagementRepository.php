@@ -103,7 +103,33 @@ class UserManagementRepository implements UserManagementInterfaces
 
     public function datatable()
     {
-        return $this->user->select('name, email, phone_number')->get();
+        $startDate = request()->start_date;
+        $endDate = request()->end_date;
+        $status = request()->status;
+        return DB::table('users')
+            ->select('id', 'name', 'email', 'phone_number', 'is_banned', 'is_active', 'created_at')
+            ->when($status, function ($query) use ($status) {
+                if ($status === 'aktif') {
+                    $query->where('is_banned', 'none')->where('is_active', true);
+                } elseif ($status === 'nonaktif') {
+                    $query->where('is_banned', 'none')->where('is_active', false);
+                } elseif ($status === 'sementara') {
+                    $query->where('is_banned', 'temporary');
+                } elseif ($status === 'permanen') {
+                    $query->where('is_banned', 'permanent');
+                }
+            })
+            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                if ($startDate == $endDate) {
+                    $query->whereDate('created_at', $startDate);
+                } else {
+                    $query->whereBetween('created_at', [
+                        $startDate . ' 00:00:00',
+                        $endDate . ' 23:59:59'
+                    ]);
+                }
+            })->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function banUser($id)

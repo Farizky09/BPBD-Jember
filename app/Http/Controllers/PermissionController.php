@@ -20,7 +20,7 @@ class PermissionController extends Controller
             return datatables()
                 ->of($this->permission->datatable())
                 ->addColumn('name', function ($data) {
-                    return $data->name;
+                    return str_replace('_', ' ', ucwords($data->name));
                 })
                 ->addColumn('action', function ($data) {
                     return view('permission.column.action', compact('data'));
@@ -84,7 +84,4 @@ class PermissionController extends Controller
             return response()->json(['error' => 'Permission gagal dihapus' . $th->getMessage()]);
         }
     }
-
-
-
 }

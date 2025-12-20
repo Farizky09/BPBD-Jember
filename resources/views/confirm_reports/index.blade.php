@@ -244,10 +244,6 @@
                         data: 'address',
                         name: 'address'
                     },
-                    // {
-                    //     data: 'category_name',
-                    //     name: 'category_name'
-                    // },
                     {
                         data: 'status',
                         name: 'status'

@@ -22,7 +22,7 @@ class RoleController extends Controller
             return datatables()
                 ->of($this->role->datatable())
                 ->addColumn('name', function ($data) {
-                    return $data->name;
+                    return str_replace('_', ' ', ucwords($data->name));
                 })
                 ->addColumn('action', function ($data) {
                     return view('role.column.action', compact('data'));

@@ -39,8 +39,8 @@ Route::controller(LandingPageController::class)->group(function () {
     Route::get('/report', 'getNewsDisaster')->name('page.reportnews');
     Route::get('/berita/{slug}', 'berita')->name('berita.detail');
 
-    Route::get('/gempa-status','gempaStatus')->name('page.gempastatus');
-    Route::get('/mountain-status','mountainStatus')->name('page.mountainstatus');
+    Route::get('/gempa-status', 'gempaStatus')->name('page.gempastatus');
+    Route::get('/mountain-status', 'mountainStatus')->name('page.mountainstatus');
 });
 
 
@@ -75,10 +75,10 @@ Route::middleware('auth')->group(function () {
 
 
     // sound notif
-    Route::get('/api/reports/pending', function () {
-        $count = \App\Models\Reports::where('status', 'pending')->count();
-        return response()->json(['total' => $count]);
-    })->name('api.reports.pending');
+    // Route::get('/api/reports/pending', function () {
+    //     $count = \App\Models\Reports::where('status', 'pending')->count();
+    //     return response()->json(['total' => $count]);
+    // })->name('api.reports.pending');
     Route::get('/api/pending-reports-count', function () {
         return response()->json([
             'count' => \App\Models\Reports::where('status', 'pending')->count()
@@ -91,7 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/home', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard-infografis', [DashboardController::class, 'indexDashboard'])->name('dashboard.infografis');
     Route::get('/infographic/data', [DashboardController::class, 'getData'])->name('dashboard.infografis.data');
-    Route::get('/eartquake/data', [DashboardController::class, 'eartquake'])->name('dashboard.infografis.eartquake');
+    // Route::get('/eartquake/data', [DashboardController::class, 'eartquake'])->name('dashboard.infografis.eartquake');
     Route::get('/mapload', [DashboardController::class, 'mapLoad'])->name('dashboard.mapload');
     // Route::get('/dashboarduser', [DashboardController::class, 'userdashboard'])->name('user.dashboard');
     Route::get('/dashboard/chart-data', [DashboardController::class, 'getReportData'])->name('dashboard.chart-data');

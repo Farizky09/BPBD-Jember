@@ -97,7 +97,7 @@
         $initialPending = \App\Models\Reports::where('status', 'pending')->count();
     @endphp
 
-    <script>
+    {{-- <script>
         let lastPending = {{ $initialPending }};
 
         function fetchPendingReports() {
@@ -131,7 +131,7 @@
 
         setTimeout(fetchPendingReports, 200);
         setInterval(fetchPendingReports, 5000);
-    </script>
+    </script> --}}
 
 
     @stack('scripts')

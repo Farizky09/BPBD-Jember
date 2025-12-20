@@ -9,9 +9,9 @@
                 <dotlottie-player src="https://lottie.host/4b99d19e-2342-4e8f-a06d-7a30b666a96b/OSJesewnTf.lottie"
                     background="transparent" speed="1" style="width: 50px; height: 50px" loop
                     autoplay></dotlottie-player>
-                <h1 class="ml-2 font-bold text-lg">BumiKita</h1>
+                <h1 class="ml-2 font-bold text-lg">BPBD-Jember</h1>
             </div>
-            
+
             <div class="nk-header-menu is-light mx-4">
                 <div class="nk-header-menu-inner">
                     <!-- Menu -->
@@ -22,7 +22,7 @@
                                     <h6 class="nk-block-title page-title text-center">Selamat Datang
                                         {{ Auth::user()->name }}</h6>
                                     <div class="nk-block-des text-soft mt-1">
-                                        Di Website resmi <strong>BumiKita</strong>
+                                        Di Website resmi <strong>BPBD-Jember</strong>
                                     </div>
                                 </div>
                             </a>
@@ -31,7 +31,7 @@
                     <!-- Menu -->
                 </div>
             </div>
-            
+
             <div class="nk-header-tools">
                 <ul class="nk-quick-nav">
                     <li class="dropdown user-dropdown">

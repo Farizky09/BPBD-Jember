@@ -1,5 +1,5 @@
 <head>
-    <title>BumiKita</title>
+    <title>BPBD-Jember</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!--===============================================================================================-->

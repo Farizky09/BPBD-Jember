@@ -3,10 +3,10 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>BumiKita</title>
+    <title>BPBD-Jember</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/icons/bpbd.png') }}">
 
-    
+
     {{-- @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('style') --}}

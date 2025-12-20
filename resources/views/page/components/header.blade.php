@@ -2,15 +2,15 @@
     <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
         <a href="/" class="flex items-center space-x-2">
             <img src="{{ asset('assets/img/icons/bpbd.png') }}" alt="Logo" class="w-10 h-10 object-contain" />
-            <h1 class="mt-2 text-xl font-bold sitename">BumiKita</h1>
+            <h1 class="mt-2 text-xl font-bold sitename">BPBD-Jember</h1>
         </a>
 
         <nav id="navmenu" class="navmenu">
             <ul id="menu-list">
                 {{-- <li><a href="#hero" class="active">Home</a></li> --}}
                 <li><a href="#Infografis">Infografis</a></li>
-                <li><a href="{{route('page.mountainstatus') }}">Status Gunung</a></li>
-                <li><a href="{{route('page.gempastatus') }}">Monitoring Gempa</a></li>
+                <li><a href="{{ route('page.mountainstatus') }}">Status Gunung</a></li>
+                <li><a href="{{ route('page.gempastatus') }}">Monitoring Gempa</a></li>
                 <li><a href="#map">Maps Bencana</a></li>
                 <li><a href="#berita">Berita</a></li>
                 <li><a href="#edukasi">Edukasi Bencana</a></li>
@@ -25,7 +25,7 @@
                         </a>
 
                         <ul x-show="open" x-transition
-                            class="absolute right-0 flex flex-col space-y-2 rounded-md py-2 px-2 w-48 z-10 mt-2 
+                            class="absolute right-0 flex flex-col space-y-2 rounded-md py-2 px-2 w-48 z-10 mt-2
 bg-white/20 backdrop-blur-md shadow-lg border border-white/20 text-white
 ">
                             @if (auth()->user()->hasRole('user'))
