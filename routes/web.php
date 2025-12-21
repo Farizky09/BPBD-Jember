@@ -23,6 +23,7 @@ use App\Http\Controllers\DisasterImpactsController;
 use App\Http\Controllers\DisasterReportDocumentationsController;
 use App\Http\Controllers\DisasterVictimsController;
 use App\Http\Controllers\InfografisController;
+use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\RecapController;
 
 Route::controller(LandingPageController::class)->group(function () {
@@ -217,17 +218,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/update-password', [ProfileController::class, 'updatePassword'])->middleware('permission:update_profile')->name('profile.update-password');
     });
 });
-// Route::post('/storefromuser', [ReportsController::class, 'storefromuser'])->name('reports.storefromuser');
-
-// laporan
-// Route::group(['prefix' => 'laporan'], function () {
-//     Route::get('/', [LaporanController::class, 'index'])->name('laporan.index');
-//     Route::get('/create', [LaporanController::class, 'create'])->name('laporan.create');
-//     Route::post('/store', [LaporanController::class, 'store'])->name('laporan.store');
-//     Route::get('/edit/{id}', [LaporanController::class, 'edit'])->name('laporan.edit');
-//     Route::put('/update/{id}', [LaporanController::class, 'update'])->name('laporan.update');
-//     Route::delete('/delete/{id}', [LaporanController::class, 'delete'])->name('laporan.delete');
-// });
+Route::get('/monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');
+Route::get('/monitoring/image/{filename}', [MonitoringController::class, 'getImage'])->name('monitoring.image');
 
 //Rekapitulasi Laporan
 Route::group(['prefix' => 'rekapitulasi-laporan'], function () {
