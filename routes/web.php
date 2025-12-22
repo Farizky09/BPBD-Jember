@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\CctvDataController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\ConfirmReportsController;
 use App\Http\Controllers\DashboardController;
@@ -63,12 +64,20 @@ Route::get('/ban-temporary', function () {
 Route::get('/ban-permanent', function () {
     return view('auth.ban-permanent');
 })->name('ban-permanent');
+
+// CCTV Monitoring - Public Route (no auth required for testing)
+Route::get('/cctv/monitoring', function () {
+    return view('cctv.monitoring');
+})->name('cctv.monitoring');
+
 // is logged
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+
+    Route::get('/cctv/monitoring', [CctvDataController::class, 'index'])->name('cctv.monitoring');
     Route::get('/lapor', [LandingPageController::class, 'lapor'])->name('page.lapor');
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

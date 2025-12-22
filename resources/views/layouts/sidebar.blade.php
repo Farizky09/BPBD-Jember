@@ -44,8 +44,8 @@
                                             class="nk-menu-text">Infografis Dashboard</span></a>
                                 </li>
                                 <li class="nk-menu-item">
-                                    <a href="{{ route('monitoring.index') }}" class="nk-menu-link"><span
-                                            class="nk-menu-text">Infografis Dashboard</span></a>
+                                    <a href="{{ route('cctv.monitoring') }}" class="nk-menu-link"><span
+                                            class="nk-menu-text">Monitoring</span></a>
                                 </li>
 
                             </ul><!-- .nk-menu-sub -->

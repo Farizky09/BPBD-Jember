@@ -33,6 +33,13 @@ Route::middleware('api')->group(function () {
     Route::post('/page/logingoogle', [LoginGoogleApiController::class, 'loginGoogle']);
 
     Route::post('send-fcm-notification', [FirebaseApiController::class, 'sendFCMNotification']);
+
+    // CCTV API - Public endpoints (no auth required for testing)
+    Route::prefix('/cctv')->group(function () {
+        Route::get('/latest', [\App\Http\Controllers\CctvDataController::class, 'getLatest']);
+        Route::get('/all', [\App\Http\Controllers\CctvDataController::class, 'getAll']);
+        Route::get('/status', [\App\Http\Controllers\CctvDataController::class, 'getStatus']);
+    });
 });
 
 Route::middleware('auth:sanctum')->group(function () {
