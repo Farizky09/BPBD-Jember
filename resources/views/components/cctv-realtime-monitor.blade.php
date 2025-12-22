@@ -11,7 +11,7 @@
     </div>
 
     <!-- Water Level Display -->
-    <div class="water-level-card mb-4">
+    <div id="waterLevelCard" class="water-level-card mb-4">
         <div class="level-display">
             <h2>Tingkat Air</h2>
             <div class="level-value">
@@ -33,24 +33,8 @@
         </div>
     </div>
 
-    <!-- Data Table -->
-    <div class="data-table-card">
-        <h3>Riwayat Data</h3>
-        <table class="table table-striped table-hover" id="dataTable">
-            <thead>
-                <tr>
-                    <th>Waktu</th>
-                    <th>Tingkat (m)</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr>
-                    <td colspan="3" class="text-center text-muted">Menunggu data...</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+
+
 </div>
 
 <style>
@@ -62,8 +46,7 @@
 
     .status-card,
     .water-level-card,
-    .image-card,
-    .data-table-card {
+    .image-card {
         background: white;
         border-radius: 8px;
         padding: 20px;
@@ -130,15 +113,6 @@
         border-radius: 4px;
     }
 
-    .table {
-        margin-bottom: 0;
-    }
-
-    .table th {
-        background-color: #f8f9fa;
-        border-top: none;
-    }
-
     .spinner {
         display: inline-block;
         width: 20px;
@@ -161,19 +135,28 @@
 </style>
 
 <script>
+    /**
+     * CCTV Real-Time Monitoring System
+     * Flow:
+     * 1. Ambil data dari CSV via API
+     * 2. Cek status (online/offline)
+     * 3. Jika online -> tampilkan semua data
+     * 4. Jika offline -> tidak tampilkan data (tapi image tetap)
+     */
+
     class CctvRealTimeMonitor {
         constructor(options = {}) {
             this.apiBaseUrl = options.apiBaseUrl || '/api/cctv';
-            this.refreshInterval = options.refreshInterval || 5000; // 5 detik
-            this.lastTimestamp = null;
+            this.refreshInterval = options.refreshInterval || 5000;
             this.init();
         }
 
+        // ============================================
+        // STEP 1: INITIALIZE & START MONITORING
+        // ============================================
         init() {
             console.log('🎥 Initializing CCTV Real-Time Monitor...');
             this.startMonitoring();
-
-            // Refresh data setiap interval
             setInterval(() => this.fetchData(), this.refreshInterval);
         }
 
@@ -181,140 +164,191 @@
             await this.fetchData();
         }
 
+        // ============================================
+        // STEP 2: AMBIL DATA DARI CSV (via API)
+        // ============================================
         async fetchData() {
             try {
-                // Fetch latest data dan status secara bersamaan
-                const [latestResponse, statusResponse] = await Promise.all([
+                console.log('📡 Fetching CCTV data...');
+
+                // Parallel requests untuk efficiency
+                const [latestResponse, statusResponse, historyResponse] = await Promise.all([
                     fetch(`${this.apiBaseUrl}/latest`),
-                    fetch(`${this.apiBaseUrl}/status`)
+                    fetch(`${this.apiBaseUrl}/status`),
+                    fetch(`${this.apiBaseUrl}/all?limit=10`)
                 ]);
 
                 const latestData = await latestResponse.json();
                 const statusData = await statusResponse.json();
+                const historyData = await historyResponse.json();
 
-                if (latestData.success) {
-                    this.updateDisplay(latestData.data);
-                }
+                // Simpan data
+                this.latestData = latestData.data || null;
+                this.statusData = statusData.data || null;
+                this.historyData = historyData.data || [];
 
-                if (statusData.success) {
-                    this.updateStatus(statusData.data);
-                }
+                console.log('✅ Data fetched:', {
+                    latest: this.latestData,
+                    status: this.statusData,
+                    history_count: this.historyData.length
+                });
 
-                // Fetch historical data
-                await this.fetchHistoricalData();
+                // STEP 3: Proses display berdasarkan status
+                this.processDisplay();
 
             } catch (error) {
                 console.error('❌ Error fetching data:', error);
-                this.showError(error.message);
+                this.showOfflineState();
             }
         }
 
-        async fetchHistoricalData() {
-            try {
-                const response = await fetch(`${this.apiBaseUrl}/all?limit=10`);
-                const data = await response.json();
+        // ============================================
+        // STEP 3: PROSES DISPLAY BERDASARKAN STATUS
+        // ============================================
+        processDisplay() {
+            // Cek status
+            const isOnline = this.statusData && this.statusData.status === 'online';
 
-                if (data.success) {
-                    this.updateTable(data.data);
-                }
-            } catch (error) {
-                console.error('Error fetching historical data:', error);
+            console.log(`📊 Status: ${isOnline ? 'ONLINE ✓' : 'OFFLINE ✗'}`);
+
+            // Update status badge
+            this.updateStatusBadge(isOnline);
+
+            if (isOnline) {
+                // JIKA ONLINE: Tampilkan semua data
+                console.log('✓ System online - Showing all data');
+                this.showOnlineState();
+            } else {
+                // JIKA OFFLINE: Jangan tampilkan data
+                console.log('✗ System offline - Hiding data');
+                this.showOfflineState();
             }
+
+            // IMAGE SELALU TAMPILKAN
+            this.updateImage();
         }
 
-        updateDisplay(data) {
-            // Update water level
-            const level = parseFloat(data.level_meter).toFixed(3);
-            document.getElementById('waterLevel').textContent = level;
-
-            // Update level bar (assume max 2 meter)
-            const barHeight = Math.min((parseFloat(data.level_meter) / 2.0) * 100, 100);
-            document.getElementById('levelBar').style.height = barHeight + '%';
-
-            // Update image
-            if (data.image_url) {
-                const img = document.getElementById('cctvImage');
-                img.src = data.image_url;
-                img.style.display = 'block';
-                document.getElementById('noImage').style.display = 'none';
-            }
-
-            // Update last update time
-            if (data.timestamp) {
-                const date = new Date(data.timestamp);
-                document.getElementById('lastUpdate').textContent =
-                    `Terakhir update: ${date.toLocaleString('id-ID')}`;
-            }
-
-            this.lastTimestamp = data.timestamp;
-        }
-
-        updateStatus(status) {
+        // ============================================
+        // FUNCTION: UPDATE STATUS BADGE
+        // ============================================
+        updateStatusBadge(isOnline) {
             const badge = document.getElementById('statusBadge');
 
-            if (status.status === 'online') {
+            if (isOnline) {
                 badge.className = 'badge badge-success';
                 badge.textContent = '✓ Online';
             } else {
                 badge.className = 'badge badge-danger';
                 badge.textContent = '✗ Offline';
             }
+
+            // Tooltip: show time ago
+            if (this.statusData && this.statusData.time_ago_seconds !== undefined) {
+                const seconds = this.statusData.time_ago_seconds;
+                const timeText = seconds < 60 ?
+                    `${seconds}s ago` :
+                    `${Math.floor(seconds / 60)}m ago`;
+                badge.title = `Last update: ${timeText}`;
+            }
         }
 
-        updateTable(dataArray) {
-            const tbody = document.getElementById('tableBody');
+        // ============================================
+        // FUNCTION: TAMPILKAN STATE ONLINE
+        // ============================================
+        showOnlineState() {
+            if (!this.latestData) return;
 
-            if (dataArray.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Tidak ada data</td></tr>';
+            // 1. Tampilkan water level
+            this.updateWaterLevel(this.latestData.level_meter);
+
+            // 2. Tampilkan last update time
+            this.updateLastUpdateTime(this.latestData.timestamp);
+
+            // Show data containers
+            document.getElementById('waterLevelCard').style.display = 'block';
+        }
+
+        // ============================================
+        // FUNCTION: TAMPILKAN STATE OFFLINE
+        // ============================================
+        showOfflineState() {
+            // Hide data containers
+            document.getElementById('waterLevelCard').style.display = 'none';
+
+            // Show offline message
+            document.getElementById('lastUpdate').textContent = '⚠️ System Offline - No Data';
+        }
+
+        // ============================================
+        // FUNCTION: UPDATE WATER LEVEL
+        // ============================================
+        updateWaterLevel(levelMeter) {
+            const level = parseFloat(levelMeter).toFixed(3);
+            document.getElementById('waterLevel').textContent = level;
+
+            // Update visual bar (0-2m)
+            const barHeight = Math.min((parseFloat(levelMeter) / 2.0) * 100, 100);
+            document.getElementById('levelBar').style.height = barHeight + '%';
+
+            console.log(`💧 Water Level: ${level}m (${barHeight.toFixed(1)}%)`);
+        }
+
+        // ============================================
+        // FUNCTION: UPDATE IMAGE (SELALU TAMPILKAN)
+        // ============================================
+        updateImage() {
+            if (!this.latestData || !this.latestData.image_url) {
+                document.getElementById('noImage').style.display = 'block';
                 return;
             }
 
-            tbody.innerHTML = dataArray.map(item => {
-                const date = new Date(item.timestamp);
-                const timeStr = date.toLocaleString('id-ID');
-                const level = parseFloat(item.level_meter).toFixed(3);
+            const img = document.getElementById('cctvImage');
+            img.src = this.latestData.image_url;
+            img.style.display = 'block';
+            document.getElementById('noImage').style.display = 'none';
 
-                return `
-                <tr>
-                    <td>${timeStr}</td>
-                    <td><strong>${level}</strong></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="cctvMonitor.viewImage('${item.image_url}')">
-                            Lihat Gambar
-                        </button>
-                    </td>
-                </tr>
-            `;
-            }).reverse().join('');
+            console.log(`📸 Image updated: ${this.latestData.image_url}`);
         }
 
+        // ============================================
+        // FUNCTION: UPDATE LAST UPDATE TIME
+        // ============================================
+        updateLastUpdateTime(timestamp) {
+            if (!timestamp) return;
+
+            const date = new Date(timestamp);
+            const timeStr = date.toLocaleString('id-ID');
+            document.getElementById('lastUpdate').textContent = `Terakhir update: ${timeStr}`;
+        }
+
+
+        // ============================================
+        // FUNCTION: VIEW SPECIFIC IMAGE
+        // ============================================
         viewImage(imageUrl) {
-            if (imageUrl) {
-                const img = document.getElementById('cctvImage');
-                img.src = imageUrl;
-                img.style.display = 'block';
-                document.getElementById('noImage').style.display = 'none';
+            if (!imageUrl) return;
 
-                // Scroll ke image container
-                document.getElementById('imageContainer').scrollIntoView({
-                    behavior: 'smooth'
-                });
-            }
-        }
+            const img = document.getElementById('cctvImage');
+            img.src = imageUrl;
+            img.style.display = 'block';
+            document.getElementById('noImage').style.display = 'none';
 
-        showError(message) {
-            const statusBadge = document.getElementById('statusBadge');
-            statusBadge.className = 'badge badge-danger';
-            statusBadge.textContent = '✗ Error: ' + message;
+            // Scroll to image
+            document.getElementById('imageContainer').scrollIntoView({
+                behavior: 'smooth'
+            });
         }
     }
 
-    // Initialize
+    // ============================================
+    // INITIALIZE MONITORING
+    // ============================================
     let cctvMonitor;
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Starting CCTV Monitoring System...');
         cctvMonitor = new CctvRealTimeMonitor({
             apiBaseUrl: '/api/cctv',
-            refreshInterval: 5000 // Refresh setiap 5 detik
+            refreshInterval: 5000
         });
     });
 </script>

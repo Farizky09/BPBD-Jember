@@ -135,12 +135,38 @@ class CctvDataService
             ];
         }
 
-        $lastTimestamp = strtotime($latestData['timestamp']);
+        try {
+            // Parse timestamp format: 2025-12-22T09:15:09.442205 (with microseconds)
+            $timestamp = $latestData['timestamp'];
+
+            // Remove microseconds jika ada
+            if (strpos($timestamp, '.') !== false) {
+                $timestamp = substr($timestamp, 0, strpos($timestamp, '.'));
+            }
+
+            $dateTime = \DateTime::createFromFormat('Y-m-d\TH:i:s', $timestamp);
+
+            if (!$dateTime) {
+                // Fallback: try parsing with strtotime
+                $lastTimestamp = strtotime($latestData['timestamp']);
+            } else {
+                $lastTimestamp = $dateTime->getTimestamp();
+            }
+        } catch (\Exception $e) {
+            // Jika parse error, return offline
+            return [
+                'status' => 'offline',
+                'message' => 'Failed to parse timestamp',
+                'error' => $e->getMessage(),
+            ];
+        }
+
         $currentTime = time();
         $timeDiff = $currentTime - $lastTimestamp;
 
-        // Jika data lebih dari 5 menit lalu, anggap offline
-        $isOnline = $timeDiff < 300;
+        // Status online jika data update dalam 2 menit (120 detik)
+        // Offline jika tidak ada update > 2 menit
+        $isOnline = $timeDiff <= 10;
 
         return [
             'status' => $isOnline ? 'online' : 'offline',
