@@ -21,6 +21,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/storage/*
+!/storage/.gitignore
+!/storage/**/.gitkeep
+
 # composer.lock
 docker-compose.yml
 /docker
