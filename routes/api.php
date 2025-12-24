@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\OtpApiController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportsApiController;
 use App\Http\Controllers\Api\UserApiController;
-
+use App\Http\Controllers\CctvDataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,10 +35,13 @@ Route::middleware('api')->group(function () {
     Route::post('send-fcm-notification', [FirebaseApiController::class, 'sendFCMNotification']);
 
     // CCTV API - Public endpoints (no auth required for testing)
-    Route::prefix('/cctv')->group(function () {
-        Route::get('/latest', [\App\Http\Controllers\CctvDataController::class, 'getLatest']);
-        Route::get('/all', [\App\Http\Controllers\CctvDataController::class, 'getAll']);
-        Route::get('/status', [\App\Http\Controllers\CctvDataController::class, 'getStatus']);
+    Route::prefix('cctv')->group(function () {
+        Route::get('/latest', [CctvDataController::class, 'getLatest']);
+        Route::get('/all', [CctvDataController::class, 'getAll']);
+        Route::get('/status', [CctvDataController::class, 'getStatus']);
+        Route::get('/image', [CctvDataController::class, 'showImage']);
+        // Route::get('/image/{filename}', [CctvDataController::class, 'showImage'])
+        //     ->where('filename', '.*');
     });
 });
 

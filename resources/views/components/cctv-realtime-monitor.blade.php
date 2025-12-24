@@ -133,8 +133,164 @@
         }
     }
 </style>
-
 <script>
+    class CctvRealTimeMonitor {
+        constructor(options = {}) {
+            this.apiBaseUrl = options.apiBaseUrl || '/api/cctv';
+            this.refreshInterval = options.refreshInterval || 5000;
+            this.latestData = null;
+            this.statusData = null;
+            this.historyData = [];
+
+            this.start();
+        }
+
+        start() {
+            this.fetchData();
+            setInterval(() => this.fetchData(), this.refreshInterval);
+        }
+
+        async fetchData() {
+            try {
+                console.log("📡 Fetching CCTV data...");
+
+                const [latestRes, statusRes, historyRes] = await Promise.all([
+                    fetch(`${this.apiBaseUrl}/latest`),
+                    fetch(`${this.apiBaseUrl}/status`),
+                    fetch(`${this.apiBaseUrl}/all?limit=10`)
+                ]);
+
+                const latest = await latestRes.json();
+                const status = await statusRes.json();
+                const history = await historyRes.json();
+
+                this.latestData = latest?.data ?? null;
+                this.statusData = status?.data ?? null;
+                this.historyData = history?.data ?? [];
+
+                this.updateStatusUI();
+                this.updateContentUI();
+                this.updateImageUI();
+
+
+
+            } catch (e) {
+                console.error("❌ Error:", e);
+                this.showOffline();
+            }
+        }
+
+        // ================= STATUS ==================
+        updateStatusUI() {
+            const badge = document.getElementById('statusBadge');
+            const isOnline = this.statusData && this.statusData.status === "online";
+
+            if (isOnline) {
+                badge.className = "badge badge-success";
+                badge.textContent = "✓ Online";
+            } else {
+                badge.className = "badge badge-danger";
+                badge.textContent = "✗ Offline";
+            }
+
+            if (this.statusData?.time_ago_seconds !== undefined) {
+                const s = this.statusData.time_ago_seconds;
+                badge.title = s < 60 ? `${s}s ago` : `${Math.floor(s/60)}m ago`;
+            }
+        }
+
+        // ================= CONTENT ==================
+        updateContentUI() {
+            const isOnline = this.statusData?.status === "online";
+
+            if (!isOnline) return this.showOffline();
+            if (!this.latestData) return;
+
+            // Water Level
+            this.updateWaterLevel(this.latestData.level_meter);
+
+            // Last update
+            this.updateLastUpdate(this.latestData.timestamp);
+
+            document.getElementById("waterLevelCard").style.display = "block";
+        }
+
+        showOffline() {
+            document.getElementById("waterLevelCard").style.display = "none";
+            document.getElementById("lastUpdate").textContent = "⚠️ System Offline - No Data";
+        }
+
+        // ================= WATER LEVEL ==================
+        updateWaterLevel(levelMeter) {
+            const value = parseFloat(levelMeter || 0);
+            document.getElementById("waterLevel").textContent = value.toFixed(3);
+
+            const bar = Math.min((value / 2.0) * 100, 100);
+            document.getElementById("levelBar").style.height = bar + "%";
+
+            console.log(`💧 Level: ${value}m`);
+        }
+
+        // ================= IMAGE ==================
+        updateImageUI() {
+            // 1. Validasi jika data / URL kosong
+            if (!this.latestData || !this.latestData.image_url) {
+                console.warn("⚠️ Data image URL kosong di respon JSON");
+                return;
+            }
+
+            const img = document.getElementById("cctvImage");
+            const noImg = document.getElementById("noImage");
+
+            // 2. Ambil URL langsung dari JSON
+            // JANGAN melakukan replace slash (\ ke /) pada full URL http://...
+            // karena itu akan merusak encoding URL (%5C) yang sudah benar dari server.
+            let url = this.latestData.image_url;
+
+            // 3. Tambahkan Cache Busting dengan Cerdas
+            // Cek apakah URL sudah punya tanda '?' (query param)
+            // JSON Anda punya parameter '?path=', jadi kita harus pakai '&' untuk sambung timestamp
+            const separator = url.includes('?') ? '&' : '?';
+            const finalUrl = `${url}${separator}t=${Date.now()}`;
+
+            console.log("📸 Loading URL:", finalUrl);
+
+            // 4. Setup Event Handlers
+            img.onload = () => {
+                img.style.display = "block";
+                noImg.style.display = "none";
+                console.log("✅ Gambar berhasil dimuat");
+            };
+
+            img.onerror = () => {
+                img.style.display = "none";
+                noImg.style.display = "block";
+                noImg.textContent = "Gagal memuat gambar (404/500)";
+                console.error("❌ Gagal load gambar dari:", finalUrl);
+            };
+
+            // 5. Set Source
+            img.src = finalUrl;
+        }
+
+        // ================= TIMESTAMP ==================
+        updateLastUpdate(timestamp) {
+            if (!timestamp) return;
+            const t = new Date(timestamp);
+            document.getElementById("lastUpdate").textContent =
+                "Terakhir update: " + t.toLocaleString("id-ID");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        new CctvRealTimeMonitor({
+            apiBaseUrl: "/api/cctv",
+            refreshInterval: 1000
+        });
+    });
+</script>
+
+{{-- <script>
     /**
      * CCTV Real-Time Monitoring System
      * Flow:
@@ -297,17 +453,39 @@
         // FUNCTION: UPDATE IMAGE (SELALU TAMPILKAN)
         // ============================================
         updateImage() {
+            // Validasi data kosong
             if (!this.latestData || !this.latestData.image_url) {
-                document.getElementById('noImage').style.display = 'block';
+                console.log(this.latestData.image_url, "Data image kosong");
                 return;
             }
 
             const img = document.getElementById('cctvImage');
-            img.src = this.latestData.image_url;
-            img.style.display = 'block';
-            document.getElementById('noImage').style.display = 'none';
+            const noImg = document.getElementById('noImage');
 
-            console.log(`📸 Image updated: ${this.latestData.image_url}`);
+            // Bersihkan URL dari backslash aneh
+            let rawUrl = this.latestData.image_url;
+            let finalUrl = rawUrl.replace(/\\/g, '/'); // Ubah \ jadi /
+
+            // Tambah timestamp agar tidak cache
+            finalUrl = finalUrl + '?t=' + new Date().getTime();
+
+            console.log("Mencoba load gambar dari URL:", finalUrl);
+
+            img.onload = function() {
+                console.log("Gambar berhasil dimuat!");
+                img.style.display = 'block'; // TAMPILKAN
+                noImg.style.display = 'none';
+            };
+
+            img.onerror = function() {
+                console.error("Gagal memuat gambar.");
+                // Tetap tampilkan icon broken image supaya bisa di-inspect
+                img.style.display = 'block';
+                img.alt = "Gagal memuat: " + finalUrl;
+                noImg.textContent = "Error Loading Image";
+            };
+
+            img.src = finalUrl;
         }
 
         // ============================================
@@ -351,4 +529,4 @@
             refreshInterval: 5000
         });
     });
-</script>
+</script> --}}

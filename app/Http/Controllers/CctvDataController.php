@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\CctvDataService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class CctvDataController extends Controller
 {
@@ -22,56 +24,94 @@ class CctvDataController extends Controller
     {
         return view('cctv.monitoring');
     }
-    public function getLatest(): JsonResponse
-    {
-        try {
-            $data = $this->cctvService->getLatestData();
-
-            if (!$data) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No data available',
-                    'data' => null,
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Latest data retrieved',
-                'data' => $data,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-                'data' => null,
-            ], 500);
-        }
-    }
 
     /**
-     * Get all CCTV data with limit
+     * Latest Data
+     */
+    public function getLatest(): JsonResponse
+    {
+        $data = $this->cctvService->getLatest();
+
+        if (!$data) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No data available',
+                'data' => null,
+            ], 404);
+        }
+
+        $imageUrl = url('/api/cctv/image?path=' . urlencode($data['image_path']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Latest data retrieved',
+            'data' => [
+                ...$data,
+                'image_url' => $imageUrl
+            ]
+        ]);
+    }
+
+
+    /**
+     * All Data (Optional Limit)
      */
     public function getAll(): JsonResponse
     {
         try {
-            $limit = request()->query('limit', 50);
-            $data = $this->cctvService->getAllData($limit);
+            $limit = request()->query('limit');
+            $data = $this->cctvService->getAll($limit);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data retrieved',
                 'total' => count($data),
                 'data' => $data,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
-                'data' => null,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
+
+    /**
+     * Show Image
+     */
+    public function showImage(Request $request)
+    {
+        try {
+            $relativePath = urldecode($request->query('path'));
+            // contoh input: monitoring_results_test\2025-12-24_14-05-24.jpg
+
+            // Normalisasi path
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            // Jika sudah mengandung folder monitoring_results_test, hapus biar tidak double
+            $relativePath = str_replace('monitoring_results_test/', '', $relativePath);
+
+            $basePath = rtrim(env('CCTV_IMAGE_BASE_PATH'), '/');
+
+            $fullPath = $basePath . '/' . $relativePath;
+
+            if (!file_exists($fullPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File not found',
+                    'debug_full_path' => $fullPath
+                ], 404);
+            }
+
+            return response()->file($fullPath);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     /**
      * Get monitoring status
