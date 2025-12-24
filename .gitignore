@@ -24,7 +24,8 @@ yarn-error.log
 /storage/*
 !/storage/.gitignore
 !/storage/**/.gitkeep
-
+/storage/logs/*
+!/storage/logs/.gitkeep
 # composer.lock
 docker-compose.yml
 /docker
