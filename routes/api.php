@@ -38,6 +38,7 @@ Route::middleware('api')->group(function () {
     Route::prefix('cctv')->group(function () {
         Route::get('/latest', [CctvDataController::class, 'getLatest']);
         Route::get('/all', [CctvDataController::class, 'getAll']);
+        Route::get('/history', [CctvDataController::class, 'history']);
         Route::get('/status', [CctvDataController::class, 'getStatus']);
         Route::get('/image', [CctvDataController::class, 'showImage']);
         // Route::get('/image/{filename}', [CctvDataController::class, 'showImage'])

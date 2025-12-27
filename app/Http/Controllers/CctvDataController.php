@@ -59,8 +59,8 @@ class CctvDataController extends Controller
     public function getAll(): JsonResponse
     {
         try {
-            $limit = request()->query('limit');
-            $data = $this->cctvService->getAll($limit);
+            // $limit = request()->query('limit');
+            $data = $this->cctvService->getAll();
 
             return response()->json([
                 'success' => true,
@@ -74,6 +74,31 @@ class CctvDataController extends Controller
             ], 500);
         }
     }
+
+    public function history(): JsonResponse
+    {
+        try {
+            $limit = request()->query('limit', 10);
+
+            $data = $this->cctvService->getAll()
+                ->take(-$limit)
+                ->reverse()
+                ->values();
+            return response()->json([
+                'success' => true,
+                'total' => count($data),
+                'data' => $data,
+                'limit' => $limit,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     /**
      * Show Image
