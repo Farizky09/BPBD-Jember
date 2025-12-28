@@ -7,6 +7,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 
+use function PHPSTORM_META\map;
+
 class CctvDataController extends Controller
 {
     protected $cctvService;
@@ -31,6 +33,9 @@ class CctvDataController extends Controller
     public function getLatest(): JsonResponse
     {
         $data = $this->cctvService->getLatest();
+        $levelInCm = $this->convertToCm($data['level_meter']);
+        $status = $this->getWaterLevelStatus($data['level_meter']);
+
 
         if (!$data) {
             return response()->json([
@@ -45,9 +50,12 @@ class CctvDataController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Latest data retrieved',
+
             'data' => [
                 ...$data,
-                'image_url' => $imageUrl
+                'image_url' => $imageUrl,
+                'status_level_air' => $status,
+                'level_meter_cm' => $levelInCm,
             ]
         ]);
     }
@@ -59,12 +67,18 @@ class CctvDataController extends Controller
     public function getAll(): JsonResponse
     {
         try {
-            // $limit = request()->query('limit');
+            // $limit = request()->query('limit', 10);
             $data = $this->cctvService->getAll();
+
+            $data = $data->map(function ($item) {
+                $item['status_level_air'] = $this->getWaterLevelStatus($item['level_meter']);
+                $item['level_meter_cm'] = $this->convertToCm($item['level_meter']);
+                return $item;
+            });
 
             return response()->json([
                 'success' => true,
-                'total' => count($data),
+                'total' => $data->count(),
                 'data' => $data,
             ]);
         } catch (\Exception $e) {
@@ -75,6 +89,7 @@ class CctvDataController extends Controller
         }
     }
 
+
     public function history(): JsonResponse
     {
         try {
@@ -84,6 +99,12 @@ class CctvDataController extends Controller
                 ->take(-$limit)
                 ->reverse()
                 ->values();
+            $data = $data->map(function ($item) {
+                $item['status_level_air'] = $this->getWaterLevelStatus($item['level_meter']);
+                $item['level_meter_cm'] = $this->convertToCm($item['level_meter']);
+                return $item;
+            });
+
             return response()->json([
                 'success' => true,
                 'total' => count($data),
@@ -156,5 +177,27 @@ class CctvDataController extends Controller
                 'message' => 'Error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function getWaterLevelStatus($level)
+    {
+        if ($level === null || $level === '') {
+            return 'unknown';
+        }
+
+        $levelInCm = $this->convertToCm($level);
+
+        if ($levelInCm >= 0 && $levelInCm <= 80) {
+            return 'normal';
+        } elseif ($levelInCm > 80 && $levelInCm < 150) {
+            return 'waspada';
+        } else {
+            return 'siaga evakuasi';
+        }
+    }
+    private function convertToCm($value)
+    {
+        $value = str_replace('.', '', $value);
+        return floatval($value) / 10;
     }
 }
