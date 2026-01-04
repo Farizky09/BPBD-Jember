@@ -101,35 +101,58 @@ class UserManagementRepository implements UserManagementInterfaces
         return $this->user->find($id)->delete();
     }
 
+
+
     public function datatable()
     {
         $startDate = request()->start_date;
         $endDate = request()->end_date;
         $status = request()->status;
-        return DB::table('users')
-            ->select('id', 'name', 'email', 'phone_number', 'is_banned', 'is_active', 'created_at')
-            ->when($status, function ($query) use ($status) {
-                if ($status === 'aktif') {
-                    $query->where('is_banned', 'none')->where('is_active', true);
-                } elseif ($status === 'nonaktif') {
-                    $query->where('is_banned', 'none')->where('is_active', false);
-                } elseif ($status === 'sementara') {
-                    $query->where('is_banned', 'temporary');
-                } elseif ($status === 'permanen') {
-                    $query->where('is_banned', 'permanent');
-                }
-            })
-            ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
-                if ($startDate == $endDate) {
-                    $query->whereDate('created_at', $startDate);
-                } else {
-                    $query->whereBetween('created_at', [
-                        $startDate . ' 00:00:00',
-                        $endDate . ' 23:59:59'
-                    ]);
-                }
-            })->orderBy('created_at', 'desc')
-            ->get();
+        $role = request()->role;
+
+        $query = DB::table('users')
+            ->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+            ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone_number',
+                'users.is_banned',
+                'users.is_active',
+                'roles.name as role_name',
+                'users.created_at'
+            );
+
+
+        if ($status) {
+            if ($status === 'aktif') {
+                $query->where('users.is_banned', 'none')->where('users.is_active', true);
+            } elseif ($status === 'nonaktif') {
+                $query->where('users.is_banned', 'none')->where('users.is_active', false);
+            } elseif ($status === 'sementara') {
+                $query->where('users.is_banned', 'temporary');
+            } elseif ($status === 'permanen') {
+                $query->where('users.is_banned', 'permanent');
+            }
+        }
+
+        if ($role) {
+            $query->where('roles.name', $role);
+        }
+
+        if ($startDate && $endDate) {
+            if ($startDate == $endDate) {
+                $query->whereDate('users.created_at', $startDate);
+            } else {
+                $query->whereBetween('users.created_at', [
+                    $startDate . ' 00:00:00',
+                    $endDate . ' 23:59:59'
+                ]);
+            }
+        }
+
+        return $query->orderBy('users.created_at', 'desc')->get();
     }
 
     public function banUser($id)

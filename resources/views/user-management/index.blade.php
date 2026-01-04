@@ -18,6 +18,27 @@
         .dataTables_length label select {
             margin: 5px;
         }
+
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-item {
+            min-width: 150px;
+        }
+
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+            }
+
+            .filter-item {
+                width: 100%;
+            }
+        }
     </style>
 @endpush
 @section('main')
@@ -39,11 +60,58 @@
                         <a href="#" class="btn btn-icon btn-trigger toggle-expand me-n1" data-target="pageMenu"><em
                                 class="icon ni ni-more-v"></em></a>
                         <div class="toggle-expand-content" data-content="pageMenu">
-                            <ul class="nk-block-tools g-3" style="display: flex; justify-content: flex-end;">
+                            <ul class="nk-block-tools g-3"
+                                style="display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
                                 <li>
                                     <a href="{{ route('user-management.create') }}">
                                         <x-button.button-success>Tambah</x-button.button-success>
                                     </a>
+                                </li>
+                                <li>
+                                    <div class="filter-container">
+                                        <div class="filter-item">
+                                            <label for="start_date" class="form-label">Tanggal Awal</label>
+                                            <x-input.input type="date" name="start_date"
+                                                id="start_date"></x-input.input>
+                                        </div>
+                                        <div class="filter-item">
+                                            <label for="end_date" class="form-label">Tanggal Akhir</label>
+                                            <x-input.input type="date" name="end_date"
+                                                id="end_date"></x-input.input>
+                                        </div>
+                                        <div class="filter-item">
+                                            <label for="status" class="form-label">Status</label>
+                                            <select name="status" id="status" class="form-control">
+                                                <option value="">Semua Status</option>
+                                                @foreach ($statuses as $statusOption)
+                                                    <option value="{{ $statusOption }}">
+                                                        {{ ucfirst($statusOption) }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="filter-item">
+                                            <label for="role" class="form-label">Role</label>
+                                            <select name="role" id="role" class="form-control">
+                                                <option value="">Semua Role</option>
+                                                @foreach ($roles as $roleOption)
+                                                    <option value="{{ $roleOption }}">
+                                                        {{ str_replace('_', ' ', ucwords($roleOption)) }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="filter-item">
+                                            <button type="button" id="buttonFilter" class="btn btn-primary"
+                                                style="height: 38px;">
+                                                Filter Data
+                                            </button>
+                                            <button type="button" id="buttonReset" class="btn btn-secondary"
+                                                style="height: 38px; margin-left: 5px;">
+                                                Reset
+                                            </button>
+                                        </div>
+                                    </div>
                                 </li>
                             </ul>
                         </div>
@@ -154,8 +222,6 @@
                             });
                         },
                         error: function(response) {
-                            console.log(response);
-
                             Swal.fire(
                                 'Gagal!',
                                 'Password user ' + _name + ' gagal direset.',
@@ -258,7 +324,20 @@
                 }
             });
         }
-        $(function() {
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+
+
+        startDateInput.addEventListener('change', function() {
+            const startDate = this.value;
+            endDateInput.min = startDate;
+        });
+
+        function reloadDataTable() {
+            $('#userDataTable').DataTable().ajax.reload();
+        }
+
+        function createDataTable() {
             let url = '{{ route('user-management.index') }}';
             $('#userDataTable').DataTable({
                 processing: true,
@@ -266,7 +345,15 @@
                 autoWidth: false,
                 responsive: true,
                 scrollX: true,
-                ajax: url,
+                ajax: {
+                    url: url,
+                    data: function(d) {
+                        d.start_date = $('#start_date').val();
+                        d.end_date = $('#end_date').val();
+                        d.status = $('#status').val();
+                        d.role = $('#role').val();
+                    }
+                },
                 language: {
                     "paginate": {
                         "first": "Pertama",
@@ -294,7 +381,6 @@
                     {
                         data: 'role',
                         name: 'role',
-
                     },
                     {
                         data: 'status',
@@ -308,8 +394,29 @@
                     },
                 ]
             });
+
+
+        }
+        createDataTable();
+
+        $('#buttonFilter').on('click', function() {
+            reloadDataTable();
         });
-        // console.log(ajax, 'p');
+
+        $('#buttonReset').on('click', function() {
+            $('#start_date').val('');
+            $('#end_date').val('');
+            $('#status').val('');
+            $('#role').val('');
+            reloadDataTable();
+        });
+
+        $('.filter-item input, .filter-item select').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                reloadDataTable();
+            }
+        });
+
         @include('components.flash-message')
     </script>
 @endpush

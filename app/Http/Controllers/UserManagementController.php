@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Interfaces\PermissionInterfaces;
 use App\Http\Controllers\Interfaces\RoleInterfaces;
 use App\Http\Controllers\Interfaces\UserManagementInterfaces;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class UserManagementController extends Controller
 {
@@ -25,7 +27,6 @@ class UserManagementController extends Controller
 
     public function index(Request $request)
     {
-        // return $this->userManagement->get();
         if ($request->ajax()) {
             return datatables()
                 ->of($this->userManagement->datatable())
@@ -39,10 +40,9 @@ class UserManagementController extends Controller
                     return $data->phone_number;
                 })
                 ->addColumn('role', function ($data) {
-                    if (method_exists($data, 'getRoleNames')) {
-                        return ucwords(str_replace('_', ' ', $data->getRoleNames()->first()));
-                    }
-                    return 'N/A';
+                    $userModel = User::find($data->id);
+                    $roles = $userModel ? $userModel->getRoleNames() : collect();
+                    return $roles->isNotEmpty() ? str_replace('_', ' ', ucwords($roles->implode(', '))) : 'No Role';
                 })
                 ->addColumn('status', function ($data) {
                     if ($data->is_banned === "none") {
@@ -65,7 +65,10 @@ class UserManagementController extends Controller
                 ->addIndexColumn()
                 ->make(true);
         }
-        return view('user-management.index');
+
+        $roles = Role::all()->pluck('name');
+        $statuses = ['aktif', 'nonaktif', 'sementara', 'permanen'];
+        return view('user-management.index', compact('roles', 'statuses'));
     }
 
     public function getById($id)
