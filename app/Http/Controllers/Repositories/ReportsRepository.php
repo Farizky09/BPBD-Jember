@@ -78,14 +78,33 @@ class ReportsRepository implements ReportsInterfaces
             throw $th;
         }
     }
+
     public function datatable()
     {
-        return $this->reports->with(['user'])
-            ->when('status', fn($q) => $q->where('status', 'pending'))
-            ->when(Auth::user()->hasRole('user'), fn($q) => $q->where('user_id', auth()->id()))
-            ->orderBy('created_at', 'desc')
+        $startDate = request()->start_date;
+        $endDate = request()->end_date;
+        return DB::table('reports')
+            ->join('users', 'reports.user_id', '=', 'users.id')
+            ->select(
+                'reports.id',
+                'reports.kd_report',
+                'reports.subdistrict',
+                'reports.address',
+                'reports.status',
+                'reports.created_at',
+                'users.name as user_name',
+                'users.id as user_id'
+            )
+            ->when(request('status'), function ($query) {
+                $query->where('reports.status', request('status'));
+            })
+            ->when(Auth::user()->hasRole('user'), function ($query) {
+                $query->where('reports.user_id', auth()->id());
+            })
+            ->orderBy('reports.created_at', 'desc')
             ->get();
     }
+
 
     public function process($id)
     {

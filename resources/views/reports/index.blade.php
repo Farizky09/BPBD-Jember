@@ -215,7 +215,7 @@
                     @if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('super_admin'))
                         {
                             data: 'pengirim',
-                            name: 'user.name'
+                            name: 'user.user_name'
                         },
                     @endif {
                         data: 'action',
@@ -227,7 +227,6 @@
             });
         });
         // console.log(ajax, 'p');
-
 
         @include('components.flash-message')
     </script>

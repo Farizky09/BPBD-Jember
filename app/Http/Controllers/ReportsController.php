@@ -28,12 +28,8 @@ class ReportsController extends Controller
 
     public function index(Request $request)
     {
-        // dd($this->reports->datatable('pending'));
-        // $type = $request->is('reports/history') ? 'history' : 'pending';
-
         if ($request->ajax()) {
             $data = $this->reports->datatable();
-
             return datatables()->of($data)
                 ->addColumn('kd_report', fn($data) => $data->kd_report)
                 ->addColumn('subdistrict', fn($data) => $data->subdistrict)
@@ -42,7 +38,7 @@ class ReportsController extends Controller
                 ->addColumn('action', fn($data) => view('reports.column.action', compact('data')))
                 ->addColumn('pengirim', function ($data) {
                     if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('super_admin')) {
-                        return $data->user->name;
+                        return $data->user_name;
                     }
                     return null;
                 })
@@ -62,22 +58,13 @@ class ReportsController extends Controller
     public function create()
     {
         $user = Auth::user();
-        // if (is_null($user->nik) || is_null($user->image_avatar) || is_null($user->photo_identity_path)) {
-        //     return back()->with('incomplete_profile', true);
-        // }
-
         $category = DisasterCategory::get();
         return view('reports.create', compact('category'));
     }
 
     public function store(Request $request)
     {
-        // dd($request->all());
         $user = Auth::user();
-        // if (is_null($user->nik) || is_null($user->image_avatar) || is_null($user->photo_identity_path)) {
-        //     return back()->with('incomplete_profile', true);
-        // }
-        // return $request->all();
         $datavalidate = $request->validate([
             // 'name' => 'required',
             'latitude' => 'required',
