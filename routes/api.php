@@ -36,13 +36,12 @@ Route::middleware('api')->group(function () {
 
     // CCTV API - Public endpoints (no auth required for testing)
     Route::prefix('cctv')->group(function () {
+        Route::get('/dashboard', [CctvDataController::class, 'getDashboard']); // Gabungkan semua
         Route::get('/latest', [CctvDataController::class, 'getLatest']);
         Route::get('/all', [CctvDataController::class, 'getAll']);
         Route::get('/history', [CctvDataController::class, 'history']);
         Route::get('/status', [CctvDataController::class, 'getStatus']);
         Route::get('/image', [CctvDataController::class, 'showImage']);
-        // Route::get('/image/{filename}', [CctvDataController::class, 'showImage'])
-        //     ->where('filename', '.*');
     });
 });
 

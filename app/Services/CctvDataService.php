@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class CctvDataService
 {
     protected $csvPath;
+    protected $cacheDuration = 60; 
 
     public function __construct()
     {
@@ -16,7 +18,6 @@ class CctvDataService
     public function getLatest()
     {
         $rows = $this->readCsv();
-
         return empty($rows) ? null : end($rows);
     }
 
@@ -24,34 +25,74 @@ class CctvDataService
     {
         $rows = collect($this->readCsv());
 
-        return $limit ? $rows->take($limit)->values() : $rows;
-    }
-
-    private function readCsv()
-    {
-        $file = $this->csvPath . '/water_level_report.csv';
-
-        if (!file_exists($file)) return [];
-
-        $rows = [];
-        if (($handle = fopen($file, 'r')) !== false) {
-            $header = null;
-
-            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
-                if (!$header) {
-                    $header = $data;
-                } else {
-                    $rows[] = array_combine($header, $data);
-                }
-            }
-            fclose($handle);
+        if ($limit) {
+            $rows = $rows->take($limit)->values();
         }
 
         return $rows;
     }
+    private function readCsv()
+    {
+        // Gunakan cache untuk mengurangi I/O
+        return Cache::remember('cctv_data_csv', $this->cacheDuration, function () {
+            $file = $this->csvPath . '/water_level_report.csv';
+
+            if (!file_exists($file)) {
+                return [];
+            }
+
+            $rows = [];
+            if (($handle = fopen($file, 'r')) !== false) {
+                $header = null;
+
+                // Baca maksimal 100 baris terakhir untuk efisiensi
+                $lines = [];
+                while (($line = fgets($handle)) !== false) {
+                    $lines[] = $line;
+                    if (count($lines) > 101) { // Keep last 100 + header
+                        array_shift($lines);
+                    }
+                }
+                fclose($handle);
+
+                // Parse CSV dari lines
+                foreach ($lines as $index => $line) {
+                    $data = str_getcsv($line);
+                    if ($index === 0) {
+                        $header = $data;
+                    } elseif ($header && count($data) === count($header)) {
+                        $rows[] = array_combine($header, $data);
+                    }
+                }
+            }
+
+            return $rows;
+        });
+    }
     /**
      * Get status monitoring
+     *
+     *
      */
+
+    public function getDashboardData($historyLimit = 10)
+    {
+        return Cache::remember('cctv_dashboard', 15, function () use ($historyLimit) {
+            $rows = collect($this->readCsv());
+
+            if ($rows->isEmpty()) {
+                return null;
+            }
+
+            $latest = $rows->last();
+            $history = $rows->take(-$historyLimit)->reverse()->values();
+
+            return [
+                'latest' => $latest,
+                'history' => $history,
+            ];
+        });
+    }
     public function getMonitoringStatus()
     {
         $latestData = $this->getLatest();

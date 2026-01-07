@@ -169,25 +169,53 @@ class CctvDataController extends Controller
         }
     }
 
-    // private function getWaterLevelStatus($level)
-    // {
-    //     if ($level === null || $level === '') {
-    //         return 'unknown';
-    //     }
-
-    //     $levelInCm = $this->convertToCm($level);
-
-    //     if ($levelInCm >= 0 && $levelInCm <= 80) {
-    //         return 'normal';
-    //     } elseif ($levelInCm > 80 && $levelInCm < 150) {
-    //         return 'waspada';
-    //     } else {
-    //         return 'siaga evakuasi';
-    //     }
-    // }
     private function convertToCm($value)
     {
         $value = str_replace('.', '', $value);
         return floatval($value) / 10;
+    }
+
+    /**
+     * Get all dashboard data in one request
+     */
+    public function getDashboard(): JsonResponse
+    {
+        try {
+            $data = $this->cctvService->getDashboardData();
+            $status = $this->cctvService->getMonitoringStatus();
+
+            if (!$data) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No data available',
+                ], 404);
+            }
+
+            // Process latest data
+            $latest = $data['latest'];
+            $imageUrl = url('/api/cctv/image?path=' . urlencode($latest['image_path']));
+            $latest['image_url'] = $imageUrl;
+            $latest['level_meter_cm'] = $this->convertToCm($latest['level_meter']);
+
+            // Process history
+            $history = $data['history']->map(function ($item) {
+                $item['level_meter_cm'] = $this->convertToCm($item['level_meter']);
+                return $item;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => $status,
+                    'latest' => $latest,
+                    'history' => $history,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
