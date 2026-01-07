@@ -34,9 +34,6 @@ class CctvDataController extends Controller
     {
         $data = $this->cctvService->getLatest();
         $levelInCm = $this->convertToCm($data['level_meter']);
-        $status = $this->getWaterLevelStatus($data['level_meter']);
-
-
         if (!$data) {
             return response()->json([
                 'success' => false,
@@ -54,7 +51,6 @@ class CctvDataController extends Controller
             'data' => [
                 ...$data,
                 'image_url' => $imageUrl,
-                'status_level_air' => $status,
                 'level_meter_cm' => $levelInCm,
             ]
         ]);
@@ -71,7 +67,6 @@ class CctvDataController extends Controller
             $data = $this->cctvService->getAll();
 
             $data = $data->map(function ($item) {
-                $item['status_level_air'] = $this->getWaterLevelStatus($item['level_meter']);
                 $item['level_meter_cm'] = $this->convertToCm($item['level_meter']);
                 return $item;
             });
@@ -100,7 +95,6 @@ class CctvDataController extends Controller
                 ->reverse()
                 ->values();
             $data = $data->map(function ($item) {
-                $item['status_level_air'] = $this->getWaterLevelStatus($item['level_meter']);
                 $item['level_meter_cm'] = $this->convertToCm($item['level_meter']);
                 return $item;
             });
@@ -134,19 +128,15 @@ class CctvDataController extends Controller
             $relativePath = str_replace('\\', '/', $relativePath);
 
             // Jika sudah mengandung folder monitoring_results_test, hapus biar tidak double
-            $relativePath = str_replace('monitoring_results_test/', '', $relativePath);
+            $basePath = rtrim(env('CCTV_IMAGE_BASE_PATH', '/www/wwwroot/processed_results'), '/');
 
-            $basePath = rtrim(env('CCTV_IMAGE_BASE_PATH'), '/');
-
-            $fullPath = $basePath . '/' . $relativePath;
-
-            if (!file_exists($fullPath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'File not found',
-                    'debug_full_path' => $fullPath
-                ], 404);
+            // Jika path relatif sudah mengandung base path, gunakan langsung
+            if (strpos($relativePath, $basePath) === 0) {
+                $fullPath = $relativePath;
+            } else {
+                $fullPath = $basePath . '/' . $relativePath;
             }
+
 
             return response()->file($fullPath);
         } catch (\Exception $e) {
@@ -179,22 +169,22 @@ class CctvDataController extends Controller
         }
     }
 
-    private function getWaterLevelStatus($level)
-    {
-        if ($level === null || $level === '') {
-            return 'unknown';
-        }
+    // private function getWaterLevelStatus($level)
+    // {
+    //     if ($level === null || $level === '') {
+    //         return 'unknown';
+    //     }
 
-        $levelInCm = $this->convertToCm($level);
+    //     $levelInCm = $this->convertToCm($level);
 
-        if ($levelInCm >= 0 && $levelInCm <= 80) {
-            return 'normal';
-        } elseif ($levelInCm > 80 && $levelInCm < 150) {
-            return 'waspada';
-        } else {
-            return 'siaga evakuasi';
-        }
-    }
+    //     if ($levelInCm >= 0 && $levelInCm <= 80) {
+    //         return 'normal';
+    //     } elseif ($levelInCm > 80 && $levelInCm < 150) {
+    //         return 'waspada';
+    //     } else {
+    //         return 'siaga evakuasi';
+    //     }
+    // }
     private function convertToCm($value)
     {
         $value = str_replace('.', '', $value);

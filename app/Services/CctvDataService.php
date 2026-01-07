@@ -29,7 +29,7 @@ class CctvDataService
 
     private function readCsv()
     {
-        $file = $this->csvPath . '/data_level_air.csv';
+        $file = $this->csvPath . '/water_level_report.csv';
 
         if (!file_exists($file)) return [];
 
@@ -100,7 +100,8 @@ class CctvDataService
             'status' => $isOnline ? 'online' : 'offline',
             'last_update' => $latestData['timestamp'],
             'time_ago_seconds' => $timeDiff,
-            'latest_level' => $latestData['level_meter'],
+            'latest_level' => $latestData['level_meter'] ?? null,
+            'water_level_status' => $latestData['level_meter'] ?? null,
         ];
     }
 }
