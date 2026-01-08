@@ -6,9 +6,11 @@ use App\Http\Controllers\Interfaces\ReportsInterfaces;
 use App\Models\ConfirmReport;
 use App\Models\ImageReport;
 use App\Models\Reports;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ReportsRepository implements ReportsInterfaces
 {
@@ -39,7 +41,21 @@ class ReportsRepository implements ReportsInterfaces
     public function store($data)
     {
         return DB::transaction(function () use ($data) {
-            return $this->reports->create($data);
+
+            $data['kd_report'] = $this->generateKdReport();
+            $data['user_id']   = Auth::id();
+            $data['status']    = 'pending';
+
+            $report = $this->reports->create($data);
+
+            if (!empty($data['images'])) {
+                $this->handlingImagesStorage(
+                    $data['images'],
+                    $report
+                );
+            }
+
+            return $report;
         });
     }
 
@@ -154,6 +170,68 @@ class ReportsRepository implements ReportsInterfaces
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
+        }
+    }
+
+    private function generateKdReport()
+    {
+        $lastReport = $this->reports->orderBy('created_at', 'desc')->first();
+        if (!$lastReport) {
+            return 'RPT-0001';
+        }
+
+        $lastKdReport = $lastReport->kd_report;
+        $number = (int) substr($lastKdReport, 4);
+        $number++;
+        return 'RPT-' . str_pad($number, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function handlingImagesStorage(array $images, $report)
+    {
+        $savedImages = [];
+
+        try {
+            foreach ($images as $index => $image) {
+
+                if (!$image->isValid()) {
+                    throw new \Exception("File gambar ke-" . ($index + 1) . " tidak valid");
+                }
+
+                $date = Carbon::parse($report->created_at)->format('j-n-Y');
+                $folderPath = "imageReports/{$date}/{$report->user_id}";
+
+                if (!Storage::disk('public')->exists($folderPath)) {
+                    Storage::disk('public')->makeDirectory($folderPath);
+                }
+
+                $filename = 'img_' . time() . '_' . Str::random(8) . '.' . $image->getClientOriginalExtension();
+
+                $path = $image->storeAs($folderPath, $filename, 'public');
+
+                if (!$path || !Storage::disk('public')->exists($path)) {
+                    throw new \Exception("Gagal menyimpan file gambar ke-" . ($index + 1));
+                }
+
+                $imageRecord = ImageReport::create([
+                    'report_id'  => $report->id,
+                    'image_path' => $path,
+                ]);
+
+                if (!$imageRecord) {
+                    throw new \Exception("Gagal menyimpan record gambar ke-" . ($index + 1));
+                }
+
+                $savedImages[] = $path;
+            }
+        } catch (\Throwable $th) {
+            // hapus file fisik jika gagal
+            foreach ($savedImages as $imagePath) {
+                if (Storage::disk('public')->exists($imagePath)) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+
+            throw $th; // biar DB::transaction rollback
         }
     }
 }
