@@ -2,27 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Interfaces\ConfirmReportsInterfaces;
 use App\Http\Controllers\Interfaces\ReportsInterfaces;
+use App\Http\Requests\ReportRequest;
 use App\Models\DisasterCategory;
-use App\Models\ImageReport;
-use App\Models\Reports;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use SebastianBergmann\CodeCoverage\Report\Xml\Report;
-use Illuminate\Support\Facades\Storage;
 
 class ReportsController extends Controller
 {
     private $reports;
-    private $confirmReports;
 
-    public function __construct(ReportsInterfaces $reports, ConfirmReportsInterfaces $confirmReports)
+    public function __construct(ReportsInterfaces $reports)
     {
         $this->reports = $reports;
-        $this->confirmReports = $confirmReports;
     }
 
 
@@ -62,63 +54,17 @@ class ReportsController extends Controller
         return view('reports.create', compact('category'));
     }
 
-    public function store(Request $request)
+    public function store(ReportRequest $request)
     {
-        $user = Auth::user();
-        $datavalidate = $request->validate([
-            // 'name' => 'required',
-            'latitude' => 'required',
-            'longitude' => 'required',
-            'address' => 'required',
-            'description' => 'required',
-            'id_category' => 'required',
-            'subdistrict' => 'required',
-
-
-        ]);
-
         try {
-            $date = Carbon::now();
-            $userId = Auth::user()->id;
-            $i = 0;
-
-            $existingToday = Reports::whereDate('created_at', $date->toDateString())->count();
-            $nomorUrut = $existingToday + ($i + 1);
-
-            $kdReport = sprintf(
-                "Laporan/%s/%s/%s/U%02d/%04d",
-                $date->format('Y'),
-                $date->format('m'),
-                $date->format('d'),
-                $userId,
-                $nomorUrut
-            );
-            $data = $datavalidate;
-            $data['user_id'] = $userId;
-            $data['status'] = "pending";
-            $data['kd_report'] = $kdReport;
-            $subdistrictRequest = $request->subdistrict;
-            $cleanedSubdistrict = preg_replace('/^(Kecamatan|Kec\.?)\s*/i', '', $subdistrictRequest);
-            $data['subdistrict'] = trim($cleanedSubdistrict);
-            $report = $this->reports->store($data);
-
-            foreach ($request->file('image') as $image) {
-                $path = $image->store('image_report/' . now()->format('Y-m-d') . '/' . $data['user_id'], 'public');
-                ImageReport::create([
-                    'report_id' => $report->id,
-                    'image_path' => $path
-                ]);
-            }
+            // dd($request->all());
+            $this->reports->store($request->validated());
 
             if ($request->from == 'dashboard') {
                 return redirect()->route('reports.index')->with('success', 'Laporan berhasil dikirim');
             }
-
             return back()->with('success', 'Laporan berhasil dikirim');
-            // return redirect()->route('reports.index')->with('success', 'Laporan berhasil dikirim');
         } catch (\Throwable $th) {
-            // dd($th);
-            // Tampilkan error di halaman sebelumnya
             return redirect()->route('reports.index')->with('error', 'Gagal: ' . $th->getMessage());
         }
     }
@@ -127,7 +73,6 @@ class ReportsController extends Controller
     public function detail($id)
     {
         $data = $this->reports->show($id);
-        // dd($data->images);
         return view('reports.detail', compact('data'));
     }
 
@@ -143,48 +88,11 @@ class ReportsController extends Controller
         return view('reports.edit', compact('data', 'category'));
     }
 
-    public function update(Request $request, $id)
+    public function update(ReportRequest $request, $id)
     {
-        // return $request->all();
-        $validate = $request->validate([
-            // 'name' => 'required',
-            'latitude' => 'required',
-            'longitude' => 'required',
-            'address' => 'required',
-            'description' => 'required',
-            'id_category' => 'required',
-            'subdistrict' => 'required',
-        ]);
 
         try {
-            $data = $validate;
-            $this->reports->update($data, $id);
-
-            // Hapus gambar yang dipilih untuk dihapus
-            if ($request->filled('deleted_images')) {
-                $deletedIds = json_decode($request->deleted_images, true); // dari input hidden
-                foreach ($deletedIds as $imageId) {
-                    $image = ImageReport::find($imageId);
-                    if ($image) {
-                        Storage::disk('public')->delete($image->image_path); // hapus file
-                        $image->delete(); // hapus data dari DB
-                    }
-                }
-            }
-
-            // Upload gambar baru jika ada
-            if ($request->hasFile('image')) {
-                foreach ($request->file('image') as $uploadedImage) {
-                    if ($uploadedImage->isValid()) {
-                        $path = $uploadedImage->store('image_report/' . now()->format('Y-m-d') . '/' . Auth::id(), 'public');
-                        ImageReport::create([
-                            'report_id' => $id,
-                            'image_path' => $path
-                        ]);
-                    }
-                }
-            }
-
+            $this->reports->update($request->validated(), $id);
             return redirect()->route('reports.index')->with('success', 'Laporan berhasil diubah');
         } catch (\Throwable $th) {
             return redirect()->route('reports.edit', $id)->with('error', 'Laporan gagal diubah ' . $th->getMessage());
@@ -197,7 +105,6 @@ class ReportsController extends Controller
             $this->reports->delete($id);
             return response()->json(['success' => 'Laporan berhasil dihapus']);
         } catch (\Throwable $th) {
-            // dd($th);
             return response()->json(['error' => 'Laporan gagal dihapus' . $th->getMessage()]);
         }
     }
@@ -205,19 +112,9 @@ class ReportsController extends Controller
     public function process($id)
     {
         try {
-
-            // dd($this->reports->process($id));
-            $result = $this->reports->process($id);
-
-            // dd($result);
-            $this->confirmReports->store([
-                'report_id' => $result->id,
-                'admin_id' => Auth::user()->id,
-                'status' => 'proses'
-            ]);
+            $this->reports->process($id);
             return response()->json(['success' => 'Laporan berhasil diprosess']);
         } catch (\Throwable $th) {
-            // dd($result);
             return response()->json(['error' => 'Laporan gagal diprosess' . $th->getMessage()]);
         }
     }

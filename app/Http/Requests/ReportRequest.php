@@ -24,13 +24,13 @@ class ReportRequest extends FormRequest
     {
         // $id = $this->route('reports') ?? $this->route('id');
         return [
-            'id_category' => 'required|exists:disaster_categories,id',
+            'id_category' => 'required|exists:disaster_category,id',
             'latitude' => 'required|string|max:50',
             'longitude' => 'required|string|max:50',
             'address' => 'required|string|max:255',
             'subdistrict' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'images.*' => 'nullable',
         ];
     }
 

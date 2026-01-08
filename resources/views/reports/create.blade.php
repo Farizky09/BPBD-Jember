@@ -19,10 +19,6 @@
     <input type="hidden" name="subdistrict" id="subdistrict">
     <div class="flex flex-wrap -mx-4">
         <div class="w-full md:w-1/2 px-4">
-            {{-- <div class="form-group mb-4">
-                <x-input.input label="Judul Laporan" name="name" id="name" placeholder="Contoh: Banjir"
-                    required="true"></x-input.input>
-            </div> --}}
             <div class="form-group mb-4">
                 <label for="id_category" class="block text-gray-700 text-sm font-bold mb-2">Jenis Bencana: <span
                         class="text-red-600">
@@ -356,16 +352,16 @@
             newInput.classList.add('image-upload-item', 'flex', 'items-center', 'mb-2');
             newInput.innerHTML = `
                 <div class="flex items-center mb-4 p-4 bg-white border border-dashed border-slate-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition">
-                    <input 
-                        type="file" 
-                        name="image[]" 
-                        accept="image/*" 
+                    <input
+                        type="file"
+                        name="image[]"
+                        accept="image/*"
                         onchange="validateImage(this)"
                         class="flex-grow py-2 px-3 text-sm text-gray-700 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                     >
-                    
-                    <button 
-                        type="button" 
+
+                    <button
+                        type="button"
                         onclick="removeImageInput(this)"
                         class="ml-4 w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-full flex items-center justify-center transition-transform hover:scale-105"
                         title="Hapus gambar"

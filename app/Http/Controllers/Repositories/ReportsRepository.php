@@ -61,15 +61,20 @@ class ReportsRepository implements ReportsInterfaces
 
     public function update($data, $id)
     {
-        DB::beginTransaction();
-        try {
-            $report = $this->reports->where('id', $id);
+        return DB::transaction(function () use ($data, $id) {
+
+            $report = $this->reports->findOrFail($id);
             $report->update($data);
-        } catch (\Throwable $th) {
-            throw $th;
-            DB::rollBack();
-        }
-        DB::commit();
+
+            if (!empty($data['images'])) {
+                $this->handlingImagesStorage(
+                    $data['images'],
+                    $report
+                );
+            }
+
+            return $report;
+        });
     }
 
     public function delete($id)
@@ -124,19 +129,18 @@ class ReportsRepository implements ReportsInterfaces
 
     public function process($id)
     {
-        DB::beginTransaction();
-        try {
-            $report = Reports::findOrFail($id);
+        return DB::transaction(function () use ($id) {
+            $report = $this->reports->findOrFail($id);
             $report->update([
                 'status' => 'process',
             ]);
-
-            DB::commit();
+            $this->confirmReports->create([
+                'report_id' => $report->id,
+                'admin_id' => Auth::user()->id,
+                'status' => 'proses',
+            ]);
             return $report;
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
-        }
+        });
     }
 
     public function accept($data, $id)
