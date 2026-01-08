@@ -57,14 +57,26 @@ class ReportsController extends Controller
     public function store(ReportRequest $request)
     {
         try {
-            // dd($request->all());
+            \Log::info('ReportsController store called', [
+                'request_data' => $request->all(),
+                'validated_data' => $request->validated(),
+                'files' => $request->file('images') ? count($request->file('images')) : 0
+            ]);
+
             $this->reports->store($request->validated());
+
+            \Log::info('ReportsController store success');
 
             if ($request->from == 'dashboard') {
                 return redirect()->route('reports.index')->with('success', 'Laporan berhasil dikirim');
             }
             return back()->with('success', 'Laporan berhasil dikirim');
         } catch (\Throwable $th) {
+            \Log::error('ReportsController store error', [
+                'message' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
             return redirect()->route('reports.index')->with('error', 'Gagal: ' . $th->getMessage());
         }
     }

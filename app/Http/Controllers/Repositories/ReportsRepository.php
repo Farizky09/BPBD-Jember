@@ -42,11 +42,22 @@ class ReportsRepository implements ReportsInterfaces
     {
         return DB::transaction(function () use ($data) {
 
+            \Log::info('ReportsRepository store called', [
+                'data_keys' => array_keys($data),
+                'has_images' => !empty($data['images']),
+                'images_count' => !empty($data['images']) ? count($data['images']) : 0
+            ]);
+
             $data['kd_report'] = $this->generateKdReport();
             $data['user_id']   = Auth::id();
             $data['status']    = 'pending';
 
             $report = $this->reports->create($data);
+
+            \Log::info('ReportsRepository report created', [
+                'report_id' => $report->id,
+                'kd_report' => $report->kd_report
+            ]);
 
             if (!empty($data['images'])) {
                 $this->handlingImagesStorage(
@@ -54,6 +65,8 @@ class ReportsRepository implements ReportsInterfaces
                     $report
                 );
             }
+
+            \Log::info('ReportsRepository store success', ['report_id' => $report->id]);
 
             return $report;
         });
@@ -195,7 +208,19 @@ class ReportsRepository implements ReportsInterfaces
         $savedImages = [];
 
         try {
+            \Log::info('handlingImagesStorage started', [
+                'report_id' => $report->id,
+                'images_count' => count($images)
+            ]);
+
             foreach ($images as $index => $image) {
+
+                \Log::info('Processing image', [
+                    'index' => $index,
+                    'original_name' => $image->getClientOriginalName(),
+                    'size' => $image->getSize(),
+                    'mime' => $image->getMimeType()
+                ]);
 
                 if (!$image->isValid()) {
                     throw new \Exception("File gambar ke-" . ($index + 1) . " tidak valid");
@@ -204,13 +229,19 @@ class ReportsRepository implements ReportsInterfaces
                 $date = Carbon::parse($report->created_at)->format('j-n-Y');
                 $folderPath = "imageReports/{$date}/{$report->user_id}";
 
+                \Log::info('Creating folder', ['folder_path' => $folderPath]);
+
                 if (!Storage::disk('public')->exists($folderPath)) {
                     Storage::disk('public')->makeDirectory($folderPath);
                 }
 
                 $filename = 'img_' . time() . '_' . Str::random(8) . '.' . $image->getClientOriginalExtension();
 
+                \Log::info('Storing file', ['filename' => $filename, 'folder' => $folderPath]);
+
                 $path = $image->storeAs($folderPath, $filename, 'public');
+
+                \Log::info('File stored', ['path' => $path]);
 
                 if (!$path || !Storage::disk('public')->exists($path)) {
                     throw new \Exception("Gagal menyimpan file gambar ke-" . ($index + 1));
@@ -221,13 +252,31 @@ class ReportsRepository implements ReportsInterfaces
                     'image_path' => $path,
                 ]);
 
+                \Log::info('Image record created', [
+                    'image_id' => $imageRecord->id,
+                    'report_id' => $report->id,
+                    'path' => $path
+                ]);
+
                 if (!$imageRecord) {
                     throw new \Exception("Gagal menyimpan record gambar ke-" . ($index + 1));
                 }
 
                 $savedImages[] = $path;
             }
+
+            \Log::info('handlingImagesStorage completed', [
+                'report_id' => $report->id,
+                'saved_images_count' => count($savedImages)
+            ]);
+
         } catch (\Throwable $th) {
+            \Log::error('handlingImagesStorage error', [
+                'report_id' => $report->id,
+                'message' => $th->getMessage(),
+                'saved_images' => $savedImages
+            ]);
+
             // hapus file fisik jika gagal
             foreach ($savedImages as $imagePath) {
                 if (Storage::disk('public')->exists($imagePath)) {
